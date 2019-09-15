@@ -10,12 +10,11 @@ type Generator struct {
 	isStarted  bool
 	isDoneFlag bool
 
-	continueChan chan struct{}
-	doneChan     chan struct{}
-	statusChan   chan *status
-	yieldChan    chan interface{}
-	returnChan   chan interface{}
-	errorChan    chan error
+	doneChan   chan bool
+	statusChan chan *status
+	yieldChan  chan interface{}
+	returnChan chan interface{}
+	errorChan  chan error
 }
 
 func New(generatorFunc func(controller *Controller) interface{}) *Generator {
@@ -23,12 +22,11 @@ func New(generatorFunc func(controller *Controller) interface{}) *Generator {
 		isStarted:  false,
 		isDoneFlag: false,
 
-		continueChan: make(chan struct{}),
-		doneChan:     make(chan struct{}),
-		statusChan:   make(chan *status),
-		yieldChan:    make(chan interface{}),
-		returnChan:   make(chan interface{}),
-		errorChan:    make(chan error),
+		doneChan:   make(chan bool),
+		statusChan: make(chan *status),
+		yieldChan:  make(chan interface{}),
+		returnChan: make(chan interface{}),
+		errorChan:  make(chan error),
 	}
 
 	go generator.start(generatorFunc)
@@ -42,7 +40,7 @@ func (g *Generator) Next(value interface{}) (interface{}, bool, error) {
 	}
 
 	g.yieldChan <- value
-	g.continueChan <- struct{}{}
+	g.doneChan <- false
 
 	status := <-g.statusChan
 	if status.done {
@@ -57,7 +55,7 @@ func (g *Generator) Return(value interface{}) (interface{}, bool, error) {
 	}
 
 	g.returnChan <- value
-	g.doneChan <- struct{}{}
+	g.doneChan <- true
 
 	return value, true, nil
 }
@@ -68,7 +66,7 @@ func (g *Generator) Error(err error) (interface{}, bool, error) {
 	}
 
 	g.errorChan <- err
-	g.continueChan <- struct{}{}
+	g.doneChan <- false
 
 	status := <-g.statusChan
 	if status.done {
@@ -102,11 +100,11 @@ func (g *Generator) isDone() bool {
 	if g.isDoneFlag {
 		return true
 	}
-	select {
-	case <-g.continueChan:
-		return false
-	case <-g.doneChan:
+
+	isDone := <-g.doneChan
+	if isDone {
 		g.isDoneFlag = true
-		return true
 	}
+
+	return isDone
 }
