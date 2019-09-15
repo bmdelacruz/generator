@@ -57,7 +57,11 @@ func (g *Generator) Return(value interface{}) (interface{}, bool, error) {
 	g.returnChan <- value
 	g.doneChan <- true
 
-	return value, true, nil
+	status := <-g.statusChan
+	if status.done {
+		g.isDoneFlag = true
+	}
+	return status.value, status.done, status.err
 }
 
 func (g *Generator) Error(err error) (interface{}, bool, error) {
@@ -82,8 +86,15 @@ func (g *Generator) start(
 
 	select {
 	case <-g.yieldChan:
-	case <-g.returnChan:
 	case <-g.errorChan:
+	case value := <-g.returnChan:
+		g.isDone() // don't care
+		g.statusChan <- &status{
+			value: value,
+			done:  true,
+			err:   nil,
+		}
+		return
 	}
 
 	if !g.isDone() {
