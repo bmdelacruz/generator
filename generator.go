@@ -91,7 +91,7 @@ func (g *Generator) start(generatorFunc GeneratorFunc) {
 	case err := <-g.errorChan:
 		g.unhandledErrorChan <- err
 	case value := <-g.returnChan:
-		g.isDone() // don't care
+		g.updateAndGetIsDone() // don't care
 		g.statusChan <- &status{
 			value: value,
 			done:  true,
@@ -100,7 +100,7 @@ func (g *Generator) start(generatorFunc GeneratorFunc) {
 		return
 	}
 
-	if !g.isDone() {
+	if !g.updateAndGetIsDone() {
 		retVal, err := generatorFunc(controller)
 
 		if !controller.wasUsed {
@@ -119,7 +119,7 @@ func (g *Generator) start(generatorFunc GeneratorFunc) {
 	}
 }
 
-func (g *Generator) isDone() bool {
+func (g *Generator) updateAndGetIsDone() bool {
 	if g.isDoneFlag {
 		return true
 	}

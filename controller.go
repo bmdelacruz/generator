@@ -19,18 +19,18 @@ func (c *Controller) Yield(value interface{}) (interface{}, bool, error) {
 
 	select {
 	case value := <-c.g.yieldChan:
-		if c.g.isDone() {
+		if c.g.updateAndGetIsDone() {
 			return nil, true, nil
 		}
 		return value, false, nil
 	case err := <-c.g.unhandledErrorChan:
-		c.g.isDone() // don't care
+		c.g.updateAndGetIsDone() // don't care
 		return nil, false, err
 	case err := <-c.g.errorChan:
-		c.g.isDone() // don't care
+		c.g.updateAndGetIsDone() // don't care
 		return nil, false, err
 	case <-c.g.returnChan:
-		c.g.isDone() // don't care
+		c.g.updateAndGetIsDone() // don't care
 		return nil, true, nil
 	}
 }
@@ -48,18 +48,18 @@ func (c *Controller) Error(err error) (interface{}, bool, error) {
 
 	select {
 	case value := <-c.g.yieldChan:
-		if c.g.isDone() {
+		if c.g.updateAndGetIsDone() {
 			return nil, true, nil
 		}
 		return value, false, nil
 	case err := <-c.g.unhandledErrorChan:
-		c.g.isDone() // don't care
+		c.g.updateAndGetIsDone() // don't care
 		return nil, false, err
 	case err := <-c.g.errorChan:
-		c.g.isDone() // don't care
+		c.g.updateAndGetIsDone() // don't care
 		return nil, false, err
 	case <-c.g.returnChan:
-		c.g.isDone() // don't care
+		c.g.updateAndGetIsDone() // don't care
 		return nil, true, nil
 	}
 }
