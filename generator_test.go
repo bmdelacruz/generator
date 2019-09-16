@@ -94,7 +94,7 @@ func TestGenerator_Error(t *testing.T) {
 		}
 	})
 
-	t.Run("Call_on_empty_generator", func(t *testing.T) {
+	t.Run("Call_on_error-returning_empty_generator", func(t *testing.T) {
 		g := generator.New(
 			func(gc *generator.Controller) (interface{}, error) {
 				return nil, fmt.Errorf("some generator error")
