@@ -1,5 +1,7 @@
 package generator
 
+import "fmt"
+
 type status struct {
 	value interface{}
 	done  bool
@@ -10,23 +12,27 @@ type Generator struct {
 	isStarted  bool
 	isDoneFlag bool
 
-	doneChan   chan bool
-	statusChan chan *status
-	yieldChan  chan interface{}
-	returnChan chan interface{}
-	errorChan  chan error
+	doneChan           chan bool
+	statusChan         chan *status
+	yieldChan          chan interface{}
+	returnChan         chan interface{}
+	errorChan          chan error
+	unhandledErrorChan chan error
 }
 
-func New(generatorFunc func(controller *Controller) interface{}) *Generator {
+type GeneratorFunc func(controller *Controller) (interface{}, error)
+
+func New(generatorFunc GeneratorFunc) *Generator {
 	generator := &Generator{
 		isStarted:  false,
 		isDoneFlag: false,
 
-		doneChan:   make(chan bool),
-		statusChan: make(chan *status),
-		yieldChan:  make(chan interface{}),
-		returnChan: make(chan interface{}),
-		errorChan:  make(chan error),
+		doneChan:           make(chan bool),
+		statusChan:         make(chan *status),
+		yieldChan:          make(chan interface{}),
+		returnChan:         make(chan interface{}),
+		errorChan:          make(chan error),
+		unhandledErrorChan: make(chan error, 1),
 	}
 
 	go generator.start(generatorFunc)
@@ -79,14 +85,13 @@ func (g *Generator) Error(err error) (interface{}, bool, error) {
 	return status.value, status.done, status.err
 }
 
-func (g *Generator) start(
-	generatorFunc func(controller *Controller) interface{},
-) {
+func (g *Generator) start(generatorFunc GeneratorFunc) {
 	controller := &Controller{g}
 
 	select {
 	case <-g.yieldChan:
-	case <-g.errorChan:
+	case err := <-g.errorChan:
+		g.unhandledErrorChan <- err
 	case value := <-g.returnChan:
 		g.isDone() // don't care
 		g.statusChan <- &status{
@@ -98,11 +103,29 @@ func (g *Generator) start(
 	}
 
 	if !g.isDone() {
-		retVal := generatorFunc(controller)
+		retVal, err := generatorFunc(controller)
+		if err == nil {
+			select {
+			case unhandledErr := <-g.unhandledErrorChan:
+				err = unhandledErr
+			default:
+			}
+		} else {
+			select {
+			case unhandledErr := <-g.unhandledErrorChan:
+				err = fmt.Errorf(
+					"returned an error (%v) but "+
+						"there's already an unhandled error (%v)",
+					err, unhandledErr,
+				)
+			default:
+			}
+		}
+
 		g.statusChan <- &status{
 			value: retVal,
 			done:  true,
-			err:   nil,
+			err:   err,
 		}
 	}
 }

@@ -10,8 +10,8 @@ import (
 func TestGenerator_Next(t *testing.T) {
 	t.Run("Call_with_nil_on_empty_generator", func(t *testing.T) {
 		g := generator.New(
-			func(gc *generator.Controller) interface{} {
-				return nil
+			func(gc *generator.Controller) (interface{}, error) {
+				return nil, nil
 			},
 		)
 		value, isDone, err := g.Next(nil)
@@ -25,8 +25,8 @@ func TestGenerator_Next(t *testing.T) {
 	})
 	t.Run("Call_with_non-nil_on_empty_generator", func(t *testing.T) {
 		g := generator.New(
-			func(gc *generator.Controller) interface{} {
-				return nil
+			func(gc *generator.Controller) (interface{}, error) {
+				return nil, nil
 			},
 		)
 		value, isDone, err := g.Next("a")
@@ -43,8 +43,8 @@ func TestGenerator_Next(t *testing.T) {
 func TestGenerator_Return(t *testing.T) {
 	t.Run("Call_with_nil_on_empty_generator", func(t *testing.T) {
 		g := generator.New(
-			func(gc *generator.Controller) interface{} {
-				return nil
+			func(gc *generator.Controller) (interface{}, error) {
+				return nil, nil
 			},
 		)
 		value, isDone, err := g.Return(nil)
@@ -58,8 +58,8 @@ func TestGenerator_Return(t *testing.T) {
 	})
 	t.Run("Call_with_non-nil_on_empty_generator", func(t *testing.T) {
 		g := generator.New(
-			func(gc *generator.Controller) interface{} {
-				return nil
+			func(gc *generator.Controller) (interface{}, error) {
+				return nil, nil
 			},
 		)
 		value, isDone, err := g.Return("a")
@@ -73,10 +73,48 @@ func TestGenerator_Return(t *testing.T) {
 	})
 }
 
+func TestGenerator_Error(t *testing.T) {
+	t.Run("Call_on_empty_generator", func(t *testing.T) {
+		g := generator.New(
+			func(gc *generator.Controller) (interface{}, error) {
+				return nil, nil
+			},
+		)
+
+		sampleError := fmt.Errorf("some error!")
+		value, isDone, err := g.Error(sampleError)
+		if value != nil || !isDone || err != sampleError {
+			t.Fail()
+		}
+
+		sampleError2 := fmt.Errorf("some error 2!")
+		value, isDone, err = g.Error(sampleError2)
+		if value != nil || !isDone || err != sampleError2 {
+			t.Fail()
+		}
+	})
+
+	t.Run("Call_on_empty_generator", func(t *testing.T) {
+		g := generator.New(
+			func(gc *generator.Controller) (interface{}, error) {
+				return nil, fmt.Errorf("some generator error")
+			},
+		)
+
+		sampleError := fmt.Errorf("some error!")
+		value, isDone, err := g.Error(sampleError)
+		if value != nil || !isDone || err == nil {
+			t.Fail()
+		} else {
+			t.Log("actual error:", err)
+		}
+	})
+}
+
 func ExampleGenerator_Return_without_value() {
 	g := generator.New(
-		func(gc *generator.Controller) interface{} {
-			return nil
+		func(gc *generator.Controller) (interface{}, error) {
+			return nil, nil
 		},
 	)
 
@@ -89,8 +127,8 @@ func ExampleGenerator_Return_without_value() {
 
 func ExampleGenerator_Return_with_value() {
 	g := generator.New(
-		func(gc *generator.Controller) interface{} {
-			return "yay!"
+		func(gc *generator.Controller) (interface{}, error) {
+			return "yay!", nil
 		},
 	)
 
@@ -103,10 +141,10 @@ func ExampleGenerator_Return_with_value() {
 
 func ExampleGenerator_Yield_and_then_return_without_value() {
 	g := generator.New(
-		func(gc *generator.Controller) interface{} {
+		func(gc *generator.Controller) (interface{}, error) {
 			gc.Yield(1)
 			gc.Yield(2)
-			return nil
+			return nil, nil
 		},
 	)
 

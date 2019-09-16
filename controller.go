@@ -17,6 +17,9 @@ func (c *Controller) Yield(value interface{}) (interface{}, bool, error) {
 			return nil, true, nil
 		}
 		return value, false, nil
+	case err := <-c.g.unhandledErrorChan:
+		c.g.isDone() // don't care
+		return nil, false, err
 	case err := <-c.g.errorChan:
 		c.g.isDone() // don't care
 		return nil, false, err
@@ -39,6 +42,9 @@ func (c *Controller) Error(err error) (interface{}, bool, error) {
 			return nil, true, nil
 		}
 		return value, false, nil
+	case err := <-c.g.unhandledErrorChan:
+		c.g.isDone() // don't care
+		return nil, false, err
 	case err := <-c.g.errorChan:
 		c.g.isDone() // don't care
 		return nil, false, err
