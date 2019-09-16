@@ -7,108 +7,102 @@ import (
 	"github.com/bmdelacruz/generator"
 )
 
-func TestGenerator_Next(t *testing.T) {
-	t.Run("Call_with_nil_on_empty_generator", func(t *testing.T) {
-		g := generator.New(
-			func(gc *generator.Controller) (interface{}, error) {
-				return nil, nil
-			},
-		)
-		value, isDone, err := g.Next(nil)
-		if value != nil || !isDone || err != nil {
-			t.Fail()
-		}
-		value, isDone, err = g.Next(nil)
-		if value != nil || !isDone || err != nil {
-			t.Fail()
-		}
-	})
-	t.Run("Call_with_non-nil_on_empty_generator", func(t *testing.T) {
-		g := generator.New(
-			func(gc *generator.Controller) (interface{}, error) {
-				return nil, nil
-			},
-		)
-		value, isDone, err := g.Next("a")
-		if value != nil || !isDone || err != nil {
-			t.Fail()
-		}
-		value, isDone, err = g.Next("b")
-		if value != nil || !isDone || err != nil {
-			t.Fail()
-		}
-	})
+func TestGenerator_Call_next_without_values_on_empty_generator_function(t *testing.T) {
+	g := generator.New(
+		func(gc *generator.Controller) (interface{}, error) {
+			return nil, nil
+		},
+	)
+	v, r, e := g.Next(nil)
+	if v != nil || !r || e != nil {
+		t.Fatal(v, r, e)
+	}
+	v, r, e = g.Next(nil)
+	if v != nil || !r || e != nil {
+		t.Fatal(v, r, e)
+	}
 }
 
-func TestGenerator_Return(t *testing.T) {
-	t.Run("Call_with_nil_on_empty_generator", func(t *testing.T) {
-		g := generator.New(
-			func(gc *generator.Controller) (interface{}, error) {
-				return nil, nil
-			},
-		)
-		value, isDone, err := g.Return(nil)
-		if value != nil || !isDone || err != nil {
-			t.Fail()
-		}
-		value, isDone, err = g.Return(nil)
-		if value != nil || !isDone || err != nil {
-			t.Fail()
-		}
-	})
-	t.Run("Call_with_non-nil_on_empty_generator", func(t *testing.T) {
-		g := generator.New(
-			func(gc *generator.Controller) (interface{}, error) {
-				return nil, nil
-			},
-		)
-		value, isDone, err := g.Return("a")
-		if value != "a" || !isDone || err != nil {
-			t.Fail()
-		}
-		value, isDone, err = g.Return("b")
-		if value != "b" || !isDone || err != nil {
-			t.Fail()
-		}
-	})
+func TestGenerator_Call_next_with_values_on_empty_generator_function(t *testing.T) {
+	g := generator.New(
+		func(gc *generator.Controller) (interface{}, error) {
+			return nil, nil
+		},
+	)
+	v, r, e := g.Next("a")
+	if v != nil || !r || e != nil {
+		t.Fatal(v, r, e)
+	}
+	v, r, e = g.Next("b")
+	if v != nil || !r || e != nil {
+		t.Fatal(v, r, e)
+	}
 }
 
-func TestGenerator_Error(t *testing.T) {
-	t.Run("Call_on_empty_generator", func(t *testing.T) {
-		g := generator.New(
-			func(gc *generator.Controller) (interface{}, error) {
-				return nil, nil
-			},
-		)
+func TestGenerator_Call_return_without_values_on_empty_generator_function(t *testing.T) {
+	g := generator.New(
+		func(gc *generator.Controller) (interface{}, error) {
+			return nil, nil
+		},
+	)
+	v, r, e := g.Return(nil)
+	if v != nil || !r || e != nil {
+		t.Fatal(v, r, e)
+	}
+	v, r, e = g.Return(nil)
+	if v != nil || !r || e != nil {
+		t.Fatal(v, r, e)
+	}
+}
 
-		sampleError := fmt.Errorf("some error!")
-		value, isDone, err := g.Error(sampleError)
-		if value != nil || !isDone || err != sampleError {
-			t.Fail()
-		}
+func TestGenerator_Call_return_with_values_on_empty_generator_function(t *testing.T) {
+	g := generator.New(
+		func(gc *generator.Controller) (interface{}, error) {
+			return nil, nil
+		},
+	)
+	v, r, e := g.Return("a")
+	if v != "a" || !r || e != nil {
+		t.Fatal(v, r, e)
+	}
+	v, r, e = g.Return("b")
+	if v != "b" || !r || e != nil {
+		t.Fatal(v, r, e)
+	}
+}
 
-		sampleError2 := fmt.Errorf("some error 2!")
-		value, isDone, err = g.Error(sampleError2)
-		if value != nil || !isDone || err != sampleError2 {
-			t.Fail()
-		}
-	})
+func TestGenerator_Call_error_with_values_on_empty_generator_function(t *testing.T) {
+	g := generator.New(
+		func(gc *generator.Controller) (interface{}, error) {
+			return nil, nil
+		},
+	)
 
-	t.Run("Call_on_error-returning_empty_generator", func(t *testing.T) {
-		g := generator.New(
-			func(gc *generator.Controller) (interface{}, error) {
-				return nil, fmt.Errorf("some generator error")
-			},
-		)
+	e1 := fmt.Errorf("some error!")
+	v, r, e := g.Error(e1)
+	if v != nil || !r || e != e1 {
+		t.Fatal(v, r, e)
+	}
 
-		sampleError := fmt.Errorf("some error!")
-		value, isDone, err := g.Error(sampleError)
-		if value != nil || !isDone || err == nil {
-			t.Fail()
-		} else {
-			t.Log("actual error:", err)
-		}
-	})
+	sampleError2 := fmt.Errorf("some error 2!")
+	v, r, e = g.Error(sampleError2)
+	if v != nil || !r || e != sampleError2 {
+		t.Fatal(v, r, e)
+	}
+}
+
+func TestGenerator_Call_error_with_values_on_error_returning_empty_generator_function(t *testing.T) {
+	g := generator.New(
+		func(gc *generator.Controller) (interface{}, error) {
+			return nil, fmt.Errorf("some generator error")
+		},
+	)
+
+	e1 := fmt.Errorf("some error!")
+	v, r, e := g.Error(e1)
+	if v != nil || !r || e == nil {
+		t.Fatal(v, r, e)
+	}
 }
 
 func ExampleGenerator_Return_without_value() {
