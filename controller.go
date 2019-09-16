@@ -2,9 +2,15 @@ package generator
 
 type Controller struct {
 	g *Generator
+
+	wasUsed bool
 }
 
 func (c *Controller) Yield(value interface{}) (interface{}, bool, error) {
+	if !c.wasUsed {
+		c.wasUsed = true
+	}
+
 	c.g.statusChan <- &status{
 		value: value,
 		done:  false,
@@ -30,6 +36,10 @@ func (c *Controller) Yield(value interface{}) (interface{}, bool, error) {
 }
 
 func (c *Controller) Error(err error) (interface{}, bool, error) {
+	if !c.wasUsed {
+		c.wasUsed = true
+	}
+
 	c.g.statusChan <- &status{
 		value: nil,
 		done:  false,

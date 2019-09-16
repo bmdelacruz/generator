@@ -1,7 +1,5 @@
 package generator
 
-import "fmt"
-
 type status struct {
 	value interface{}
 	done  bool
@@ -86,7 +84,7 @@ func (g *Generator) Error(err error) (interface{}, bool, error) {
 }
 
 func (g *Generator) start(generatorFunc GeneratorFunc) {
-	controller := &Controller{g}
+	controller := &Controller{g: g}
 
 	select {
 	case <-g.yieldChan:
@@ -104,20 +102,11 @@ func (g *Generator) start(generatorFunc GeneratorFunc) {
 
 	if !g.isDone() {
 		retVal, err := generatorFunc(controller)
-		if err == nil {
+
+		if !controller.wasUsed {
 			select {
 			case unhandledErr := <-g.unhandledErrorChan:
 				err = unhandledErr
-			default:
-			}
-		} else {
-			select {
-			case unhandledErr := <-g.unhandledErrorChan:
-				err = fmt.Errorf(
-					"returned an error (%v) but "+
-						"there's already an unhandled error (%v)",
-					err, unhandledErr,
-				)
 			default:
 			}
 		}
