@@ -222,6 +222,164 @@ func TestGenerator_Call_error_with_values_on_yielding_generator_function(t *test
 	}
 }
 
+func TestGenerator_Call_next_next_and_return_with_values_on_yielding_generator_function(t *testing.T) {
+	g := generator.New(
+		func(gc *generator.Controller) (interface{}, error) {
+			v, r, e := gc.Yield(1)
+			if v != "a" || r || e != nil {
+				panic(fmt.Errorf("%v %v %v", v, r, e))
+			}
+			v, r, e = gc.Yield(2)
+			if v != "b" || !r || e != nil {
+				panic(fmt.Errorf("%v %v %v", v, r, e))
+			}
+			return v, nil
+		},
+	)
+	v, r, e := g.Next(nil)
+	if v != 1 || r || e != nil {
+		t.Fatal(v, r, e)
+	}
+	v, r, e = g.Next("a")
+	if v != 2 || r || e != nil {
+		t.Fatal(v, r, e)
+	}
+	v, r, e = g.Return("b")
+	if v != "b" || !r || e != nil {
+		t.Fatal(v, r, e)
+	}
+}
+
+func TestGenerator_Call_next_next_and_error_with_values_on_yielding_generator_function(t *testing.T) {
+	g := generator.New(
+		func(gc *generator.Controller) (interface{}, error) {
+			v, r, e := gc.Yield(1)
+			if v != "a" || r || e != nil {
+				panic(fmt.Errorf("%v %v %v", v, r, e))
+			}
+			v, r, e = gc.Yield(2)
+			if v != nil || r || e == nil {
+				panic(fmt.Errorf("%v %v %v", v, r, e))
+			}
+			return nil, e
+		},
+	)
+	v, r, e := g.Next(nil)
+	if v != 1 || r || e != nil {
+		t.Fatal(v, r, e)
+	}
+	v, r, e = g.Next("a")
+	if v != 2 || r || e != nil {
+		t.Fatal(v, r, e)
+	}
+	e1 := fmt.Errorf("e1")
+	v, r, e = g.Error(e1)
+	if v != nil || !r || e != e1 {
+		t.Fatal(v, r, e)
+	}
+}
+
+func TestGenerator_Call_next_and_next_with_values_on_erroring_generator_function(t *testing.T) {
+	e1 := fmt.Errorf("e1")
+	g := generator.New(
+		func(gc *generator.Controller) (interface{}, error) {
+			v, r, e := gc.Error(e1)
+			if v != nil || r || e != nil {
+				panic(fmt.Errorf("%v %v %v", v, r, e))
+			}
+			return nil, nil
+		},
+	)
+	v, r, e := g.Next(nil)
+	if v != nil || r || e != e1 {
+		t.Fatal(v, r, e)
+	}
+	v, r, e = g.Next(nil)
+	if v != nil || !r || e != nil {
+		t.Fatal(v, r, e)
+	}
+}
+
+func TestGenerator_Call_return_without_values_on_erroring_generator_function(t *testing.T) {
+	e1 := fmt.Errorf("e1")
+	g := generator.New(
+		func(gc *generator.Controller) (interface{}, error) {
+			v, r, e := gc.Error(e1)
+			if v != nil || !r || e != nil {
+				panic(fmt.Errorf("%v %v %v", v, r, e))
+			}
+			return nil, nil
+		},
+	)
+	v, r, e := g.Return(nil)
+	if v != nil || !r || e != nil {
+		t.Fatal(v, r, e)
+	}
+}
+
+func TestGenerator_Call_error_and_next_without_values_on_erroring_generator_function(t *testing.T) {
+	e1 := fmt.Errorf("e1")
+	g := generator.New(
+		func(gc *generator.Controller) (interface{}, error) {
+			v, r, e := gc.Error(e1)
+			if v != nil || r || e != e1 {
+				panic(fmt.Errorf("%v %v %v", v, r, e))
+			}
+			return nil, e
+		},
+	)
+	v, r, e := g.Error(e1)
+	if v != nil || r || e != nil {
+		t.Fatal(v, r, e)
+	}
+	v, r, e = g.Next(nil)
+	if v != nil || !r || e != e1 {
+		t.Fatal(v, r, e)
+	}
+}
+
+func TestGenerator_Call_next_and_error_with_values_on_erroring_generator_function(t *testing.T) {
+	e1 := fmt.Errorf("e1")
+	g := generator.New(
+		func(gc *generator.Controller) (interface{}, error) {
+			v, r, e := gc.Error(e1)
+			if v != nil || r || e != e1 {
+				panic(fmt.Errorf("%v %v %v", v, r, e))
+			}
+			return nil, e
+		},
+	)
+	v, r, e := g.Next(nil)
+	if v != nil || r || e != e1 {
+		t.Fatal(v, r, e)
+	}
+	v, r, e = g.Error(e1)
+	if v != nil || !r || e != e1 {
+		t.Fatal(v, r, e)
+	}
+}
+
+func TestGenerator_Call_next_and_return_with_values_on_erroring_generator_function(t *testing.T) {
+	e1 := fmt.Errorf("e1")
+	g := generator.New(
+		func(gc *generator.Controller) (interface{}, error) {
+			v, r, e := gc.Error(e1)
+			if v != "a" || !r || e != nil {
+				panic(fmt.Errorf("%v %v %v", v, r, e))
+			}
+			return v, nil
+		},
+	)
+	v, r, e := g.Next(nil)
+	if v != nil || r || e != e1 {
+		t.Fatal(v, r, e)
+	}
+	v, r, e = g.Return("a")
+	if v != "a" || !r || e != nil {
+		t.Fatal(v, r, e)
+	}
+}
+
 func ExampleGenerator_Return_without_value() {
 	g := generator.New(
 		func(gc *generator.Controller) (interface{}, error) {
