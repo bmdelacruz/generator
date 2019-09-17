@@ -19,7 +19,7 @@ type yieldRetStatus struct {
 	value interface{}
 }
 
-func (rs yieldRetStatus) Type() string {
+func (yieldRetStatus) Type() string {
 	return "yield"
 }
 
@@ -31,7 +31,7 @@ type errorRetStatus struct {
 	err error
 }
 
-func (rs errorRetStatus) Type() string {
+func (errorRetStatus) Type() string {
 	return "error"
 }
 
@@ -43,7 +43,7 @@ type returnRetStatus struct {
 	value interface{}
 }
 
-func (rs returnRetStatus) Type() string {
+func (returnRetStatus) Type() string {
 	return "return"
 }
 
