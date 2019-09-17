@@ -48,9 +48,9 @@ func (c *Controller) Yield(value interface{}) (interface{}, bool, error) {
 	case err := <-c.g.errorChan:
 		c.g.updateAndGetIsDone()
 		return nil, false, err
-	case <-c.g.returnChan:
+	case value := <-c.g.returnChan:
 		c.g.updateAndGetIsDone()
-		return nil, true, nil
+		return value, true, nil
 	}
 }
 
@@ -96,8 +96,8 @@ func (c *Controller) Error(err error) (interface{}, bool, error) {
 	case err := <-c.g.errorChan:
 		c.g.updateAndGetIsDone()
 		return nil, false, err
-	case <-c.g.returnChan:
+	case value := <-c.g.returnChan:
 		c.g.updateAndGetIsDone()
-		return nil, true, nil
+		return value, true, nil
 	}
 }
