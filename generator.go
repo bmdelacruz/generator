@@ -10,12 +10,13 @@ type Generator struct {
 	isStarted  bool
 	isDoneFlag bool
 
-	doneChan           chan bool
-	statusChan         chan *status
-	yieldChan          chan interface{}
-	returnChan         chan interface{}
-	errorChan          chan error
-	unhandledErrorChan chan error
+	doneChan            chan bool
+	statusChan          chan *status
+	yieldChan           chan interface{}
+	returnChan          chan interface{}
+	errorChan           chan error
+	unhandledReturnChan chan interface{}
+	unhandledErrorChan  chan error
 }
 
 type GeneratorFunc func(controller *Controller) (interface{}, error)
@@ -25,12 +26,13 @@ func New(generatorFunc GeneratorFunc) *Generator {
 		isStarted:  false,
 		isDoneFlag: false,
 
-		doneChan:           make(chan bool),
-		statusChan:         make(chan *status),
-		yieldChan:          make(chan interface{}),
-		returnChan:         make(chan interface{}),
-		errorChan:          make(chan error),
-		unhandledErrorChan: make(chan error, 1),
+		doneChan:            make(chan bool),
+		statusChan:          make(chan *status),
+		yieldChan:           make(chan interface{}),
+		returnChan:          make(chan interface{}),
+		errorChan:           make(chan error),
+		unhandledReturnChan: make(chan interface{}, 1),
+		unhandledErrorChan:  make(chan error, 1),
 	}
 
 	go generator.start(generatorFunc)
@@ -90,32 +92,33 @@ func (g *Generator) start(generatorFunc GeneratorFunc) {
 	case <-g.yieldChan:
 	case err := <-g.errorChan:
 		g.unhandledErrorChan <- err
+		close(g.unhandledErrorChan)
 	case value := <-g.returnChan:
-		g.updateAndGetIsDone() // don't care
-		g.statusChan <- &status{
-			value: value,
-			done:  true,
-			err:   nil,
-		}
-		return
+		g.unhandledReturnChan <- value
+		close(g.unhandledReturnChan)
 	}
 
-	if !g.updateAndGetIsDone() {
-		retVal, err := generatorFunc(controller)
+	g.updateAndGetIsDone()
 
-		if !controller.wasUsed {
-			select {
-			case unhandledErr := <-g.unhandledErrorChan:
-				err = unhandledErr
-			default:
-			}
-		}
+	value, err := generatorFunc(controller)
 
-		g.statusChan <- &status{
-			value: retVal,
-			done:  true,
-			err:   err,
+	if !controller.wasUsed {
+		select {
+		case unhandledReturn := <-g.unhandledReturnChan:
+			value = unhandledReturn
+		default:
 		}
+		select {
+		case unhandledErr := <-g.unhandledErrorChan:
+			err = unhandledErr
+		default:
+		}
+	}
+
+	g.statusChan <- &status{
+		value: value,
+		done:  true,
+		err:   err,
 	}
 }
 
