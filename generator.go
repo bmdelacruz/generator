@@ -1,20 +1,12 @@
 package generator
 
-type status struct {
-	value interface{}
-	done  bool
-	err   error
-}
-
 type Generator struct {
 	isStarted  bool
 	isDoneFlag bool
 
 	doneChan            chan bool
 	statusChan          chan *status
-	yieldChan           chan interface{}
-	returnChan          chan interface{}
-	errorChan           chan error
+	retStatusChan       chan retStatus
 	unhandledReturnChan chan interface{}
 	unhandledErrorChan  chan error
 }
@@ -28,9 +20,7 @@ func New(generatorFunc GeneratorFunc) *Generator {
 
 		doneChan:            make(chan bool),
 		statusChan:          make(chan *status),
-		yieldChan:           make(chan interface{}),
-		returnChan:          make(chan interface{}),
-		errorChan:           make(chan error),
+		retStatusChan:       make(chan retStatus),
 		unhandledReturnChan: make(chan interface{}, 1),
 		unhandledErrorChan:  make(chan error, 1),
 	}
@@ -45,7 +35,7 @@ func (g *Generator) Next(value interface{}) (interface{}, bool, error) {
 		return nil, true, nil
 	}
 
-	g.yieldChan <- value
+	g.retStatusChan <- &yieldRetStatus{value}
 	g.doneChan <- false
 
 	status := <-g.statusChan
@@ -57,7 +47,7 @@ func (g *Generator) Return(value interface{}) (interface{}, bool, error) {
 		return nil, true, nil
 	}
 
-	g.returnChan <- value
+	g.retStatusChan <- &returnRetStatus{value}
 	g.isDoneFlag = true
 	g.doneChan <- true
 
@@ -70,7 +60,7 @@ func (g *Generator) Error(err error) (interface{}, bool, error) {
 		return nil, true, nil
 	}
 
-	g.errorChan <- err
+	g.retStatusChan <- &errorRetStatus{err}
 	g.doneChan <- false
 
 	status := <-g.statusChan
@@ -80,16 +70,17 @@ func (g *Generator) Error(err error) (interface{}, bool, error) {
 func (g *Generator) start(generatorFunc GeneratorFunc) {
 	controller := &Controller{g: g}
 
-	select {
-	case <-g.yieldChan:
-	case err := <-g.errorChan:
-		g.unhandledErrorChan <- err
+	rs := <-g.retStatusChan
+	v, _, e := rs.Data()
+	switch rs.Type() {
+	case "yield":
+	case "error":
+		g.unhandledErrorChan <- e
 		close(g.unhandledErrorChan)
-	case value := <-g.returnChan:
-		g.unhandledReturnChan <- value
+	case "return":
+		g.unhandledReturnChan <- v
 		close(g.unhandledReturnChan)
 	}
-
 	<-g.doneChan
 
 	value, err := generatorFunc(controller)

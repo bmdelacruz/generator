@@ -20,15 +20,8 @@ func (c *Controller) Yield(value interface{}) (interface{}, bool, error) {
 			done:  false,
 			err:   nil,
 		}
-
-		select {
-		case <-c.g.yieldChan:
-		case <-c.g.errorChan:
-		case <-c.g.returnChan:
-		}
-
+		<-c.g.retStatusChan
 		<-c.g.doneChan
-
 		return nil, false, err
 	default:
 	}
@@ -42,18 +35,9 @@ func (c *Controller) Yield(value interface{}) (interface{}, bool, error) {
 		done:  false,
 		err:   nil,
 	}
-
-	select {
-	case value := <-c.g.yieldChan:
-		<-c.g.doneChan
-		return value, false, nil
-	case err := <-c.g.errorChan:
-		<-c.g.doneChan
-		return nil, false, err
-	case value := <-c.g.returnChan:
-		<-c.g.doneChan
-		return value, true, nil
-	}
+	rs := <-c.g.retStatusChan
+	<-c.g.doneChan
+	return rs.Data()
 }
 
 func (c *Controller) Error(err error) (interface{}, bool, error) {
@@ -70,15 +54,8 @@ func (c *Controller) Error(err error) (interface{}, bool, error) {
 			done:  false,
 			err:   nil,
 		}
-
-		select {
-		case <-c.g.yieldChan:
-		case <-c.g.errorChan:
-		case <-c.g.returnChan:
-		}
-
+		<-c.g.retStatusChan
 		<-c.g.doneChan
-
 		return nil, false, err
 	default:
 	}
@@ -92,16 +69,7 @@ func (c *Controller) Error(err error) (interface{}, bool, error) {
 		done:  false,
 		err:   err,
 	}
-
-	select {
-	case value := <-c.g.yieldChan:
-		<-c.g.doneChan
-		return value, false, nil
-	case err := <-c.g.errorChan:
-		<-c.g.doneChan
-		return nil, false, err
-	case value := <-c.g.returnChan:
-		<-c.g.doneChan
-		return value, true, nil
-	}
+	rs := <-c.g.retStatusChan
+	<-c.g.doneChan
+	return rs.Data()
 }
