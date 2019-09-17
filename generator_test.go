@@ -8,6 +8,7 @@ import (
 )
 
 func TestGenerator_Call_next_without_values_on_empty_generator_function(t *testing.T) {
+	t.Parallel()
 	g := generator.New(
 		func(gc *generator.Controller) (interface{}, error) {
 			return nil, nil
@@ -24,6 +25,7 @@ func TestGenerator_Call_next_without_values_on_empty_generator_function(t *testi
 }
 
 func TestGenerator_Call_next_with_values_on_empty_generator_function(t *testing.T) {
+	t.Parallel()
 	g := generator.New(
 		func(gc *generator.Controller) (interface{}, error) {
 			return nil, nil
@@ -40,6 +42,7 @@ func TestGenerator_Call_next_with_values_on_empty_generator_function(t *testing.
 }
 
 func TestGenerator_Call_return_without_values_on_empty_generator_function(t *testing.T) {
+	t.Parallel()
 	g := generator.New(
 		func(gc *generator.Controller) (interface{}, error) {
 			return nil, nil
@@ -56,6 +59,7 @@ func TestGenerator_Call_return_without_values_on_empty_generator_function(t *tes
 }
 
 func TestGenerator_Call_return_with_values_on_empty_generator_function(t *testing.T) {
+	t.Parallel()
 	g := generator.New(
 		func(gc *generator.Controller) (interface{}, error) {
 			return nil, nil
@@ -66,32 +70,34 @@ func TestGenerator_Call_return_with_values_on_empty_generator_function(t *testin
 		t.Fatal(v, r, e)
 	}
 	v, r, e = g.Return("b")
-	if v != "b" || !r || e != nil {
+	if v != nil || !r || e != nil {
 		t.Fatal(v, r, e)
 	}
 }
 
 func TestGenerator_Call_error_with_values_on_empty_generator_function(t *testing.T) {
+	t.Parallel()
 	g := generator.New(
 		func(gc *generator.Controller) (interface{}, error) {
 			return nil, nil
 		},
 	)
 
-	e1 := fmt.Errorf("some error!")
+	e1 := fmt.Errorf("e1")
 	v, r, e := g.Error(e1)
 	if v != nil || !r || e != e1 {
 		t.Fatal(v, r, e)
 	}
 
-	sampleError2 := fmt.Errorf("some error 2!")
-	v, r, e = g.Error(sampleError2)
-	if v != nil || !r || e != sampleError2 {
+	e2 := fmt.Errorf("e2")
+	v, r, e = g.Error(e2)
+	if v != nil || !r || e != nil {
 		t.Fatal(v, r, e)
 	}
 }
 
 func TestGenerator_Call_error_with_values_on_error_returning_empty_generator_function(t *testing.T) {
+	t.Parallel()
 	g := generator.New(
 		func(gc *generator.Controller) (interface{}, error) {
 			return nil, fmt.Errorf("some generator error")
@@ -106,6 +112,7 @@ func TestGenerator_Call_error_with_values_on_error_returning_empty_generator_fun
 }
 
 func TestGenerator_Call_next_without_values_on_yielding_generator_function(t *testing.T) {
+	t.Parallel()
 	g := generator.New(
 		func(gc *generator.Controller) (interface{}, error) {
 			v, r, e := gc.Yield(1)
@@ -134,6 +141,7 @@ func TestGenerator_Call_next_without_values_on_yielding_generator_function(t *te
 }
 
 func TestGenerator_Call_next_with_values_on_yielding_generator_function(t *testing.T) {
+	t.Parallel()
 	g := generator.New(
 		func(gc *generator.Controller) (interface{}, error) {
 			v, r, e := gc.Yield(1)
@@ -162,6 +170,7 @@ func TestGenerator_Call_next_with_values_on_yielding_generator_function(t *testi
 }
 
 func TestGenerator_Call_return_without_values_on_yielding_generator_function(t *testing.T) {
+	t.Parallel()
 	g := generator.New(
 		func(gc *generator.Controller) (interface{}, error) {
 			v, r, e := gc.Yield(1)
@@ -182,6 +191,7 @@ func TestGenerator_Call_return_without_values_on_yielding_generator_function(t *
 }
 
 func TestGenerator_Call_return_with_values_on_yielding_generator_function(t *testing.T) {
+	t.Parallel()
 	g := generator.New(
 		func(gc *generator.Controller) (interface{}, error) {
 			v, r, e := gc.Yield(1)
@@ -195,13 +205,10 @@ func TestGenerator_Call_return_with_values_on_yielding_generator_function(t *tes
 	if v != "a" || !r || e != nil {
 		t.Fatal(v, r, e)
 	}
-	v, r, e = g.Return("b")
-	if v != "b" || !r || e != nil {
-		t.Fatal(v, r, e)
-	}
 }
 
 func TestGenerator_Call_error_with_values_on_yielding_generator_function(t *testing.T) {
+	t.Parallel()
 	e1 := fmt.Errorf("e1")
 	g := generator.New(
 		func(gc *generator.Controller) (interface{}, error) {
@@ -223,6 +230,7 @@ func TestGenerator_Call_error_with_values_on_yielding_generator_function(t *test
 }
 
 func TestGenerator_Call_next_next_and_return_with_values_on_yielding_generator_function(t *testing.T) {
+	t.Parallel()
 	g := generator.New(
 		func(gc *generator.Controller) (interface{}, error) {
 			v, r, e := gc.Yield(1)
@@ -251,6 +259,7 @@ func TestGenerator_Call_next_next_and_return_with_values_on_yielding_generator_f
 }
 
 func TestGenerator_Call_next_next_and_error_with_values_on_yielding_generator_function(t *testing.T) {
+	t.Parallel()
 	g := generator.New(
 		func(gc *generator.Controller) (interface{}, error) {
 			v, r, e := gc.Yield(1)
@@ -280,6 +289,7 @@ func TestGenerator_Call_next_next_and_error_with_values_on_yielding_generator_fu
 }
 
 func TestGenerator_Call_next_and_next_with_values_on_erroring_generator_function(t *testing.T) {
+	t.Parallel()
 	e1 := fmt.Errorf("e1")
 	g := generator.New(
 		func(gc *generator.Controller) (interface{}, error) {
@@ -301,6 +311,7 @@ func TestGenerator_Call_next_and_next_with_values_on_erroring_generator_function
 }
 
 func TestGenerator_Call_return_without_values_on_erroring_generator_function(t *testing.T) {
+	t.Parallel()
 	e1 := fmt.Errorf("e1")
 	g := generator.New(
 		func(gc *generator.Controller) (interface{}, error) {
@@ -318,6 +329,7 @@ func TestGenerator_Call_return_without_values_on_erroring_generator_function(t *
 }
 
 func TestGenerator_Call_error_and_next_without_values_on_erroring_generator_function(t *testing.T) {
+	t.Parallel()
 	e1 := fmt.Errorf("e1")
 	g := generator.New(
 		func(gc *generator.Controller) (interface{}, error) {
@@ -339,6 +351,7 @@ func TestGenerator_Call_error_and_next_without_values_on_erroring_generator_func
 }
 
 func TestGenerator_Call_next_and_error_with_values_on_erroring_generator_function(t *testing.T) {
+	t.Parallel()
 	e1 := fmt.Errorf("e1")
 	g := generator.New(
 		func(gc *generator.Controller) (interface{}, error) {
@@ -360,6 +373,7 @@ func TestGenerator_Call_next_and_error_with_values_on_erroring_generator_functio
 }
 
 func TestGenerator_Call_next_and_return_with_values_on_erroring_generator_function(t *testing.T) {
+	t.Parallel()
 	e1 := fmt.Errorf("e1")
 	g := generator.New(
 		func(gc *generator.Controller) (interface{}, error) {
@@ -376,6 +390,56 @@ func TestGenerator_Call_next_and_return_with_values_on_erroring_generator_functi
 	}
 	v, r, e = g.Return("a")
 	if v != "a" || !r || e != nil {
+		t.Fatal(v, r, e)
+	}
+}
+
+func TestGenerator_Yield_multiple_times_in_generator_function_when_should_return_after_first_yield(t *testing.T) {
+	t.Parallel()
+	g := generator.New(
+		func(gc *generator.Controller) (interface{}, error) {
+			v, r, e := gc.Yield(1)
+			if v != nil || !r || e != nil {
+				panic(fmt.Errorf("%v %v %v", v, r, e))
+			}
+			v, r, e = gc.Yield(2)
+			if v != nil || !r || e != nil {
+				panic(fmt.Errorf("%v %v %v", v, r, e))
+			}
+			return nil, nil
+		},
+	)
+	v, r, e := g.Next(nil)
+	if v != 1 || r || e != nil {
+		t.Fatal(v, r, e)
+	}
+	v, r, e = g.Return(nil)
+	if v != nil || !r || e != nil {
+		t.Fatal(v, r, e)
+	}
+}
+
+func TestGenerator_Error_multiple_times_in_generator_function_when_should_return_after_first_error(t *testing.T) {
+	t.Parallel()
+	g := generator.New(
+		func(gc *generator.Controller) (interface{}, error) {
+			v, r, e := gc.Error(fmt.Errorf("e1"))
+			if v != nil || !r || e != nil {
+				panic(fmt.Errorf("%v %v %v", v, r, e))
+			}
+			v, r, e = gc.Error(fmt.Errorf("e2"))
+			if v != nil || !r || e != nil {
+				panic(fmt.Errorf("%v %v %v", v, r, e))
+			}
+			return nil, nil
+		},
+	)
+	v, r, e := g.Next(nil)
+	if v != nil || r || e == nil {
+		t.Fatal(v, r, e)
+	}
+	v, r, e = g.Return(nil)
+	if v != nil || !r || e != nil {
 		t.Fatal(v, r, e)
 	}
 }

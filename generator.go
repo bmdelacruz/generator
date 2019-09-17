@@ -49,39 +49,31 @@ func (g *Generator) Next(value interface{}) (interface{}, bool, error) {
 	g.doneChan <- false
 
 	status := <-g.statusChan
-	if status.done {
-		g.isDoneFlag = true
-	}
 	return status.value, status.done, status.err
 }
 
 func (g *Generator) Return(value interface{}) (interface{}, bool, error) {
 	if g.isDoneFlag {
-		return value, true, nil
+		return nil, true, nil
 	}
 
 	g.returnChan <- value
+	g.isDoneFlag = true
 	g.doneChan <- true
 
 	status := <-g.statusChan
-	if status.done {
-		g.isDoneFlag = true
-	}
 	return status.value, status.done, status.err
 }
 
 func (g *Generator) Error(err error) (interface{}, bool, error) {
 	if g.isDoneFlag {
-		return nil, true, err
+		return nil, true, nil
 	}
 
 	g.errorChan <- err
 	g.doneChan <- false
 
 	status := <-g.statusChan
-	if status.done {
-		g.isDoneFlag = true
-	}
 	return status.value, status.done, status.err
 }
 
@@ -98,7 +90,7 @@ func (g *Generator) start(generatorFunc GeneratorFunc) {
 		close(g.unhandledReturnChan)
 	}
 
-	g.updateAndGetIsDone()
+	<-g.doneChan
 
 	value, err := generatorFunc(controller)
 
@@ -113,6 +105,8 @@ func (g *Generator) start(generatorFunc GeneratorFunc) {
 			err = unhandledErr
 		default:
 		}
+
+		g.isDoneFlag = true
 	}
 
 	g.statusChan <- &status{
@@ -120,17 +114,4 @@ func (g *Generator) start(generatorFunc GeneratorFunc) {
 		done:  true,
 		err:   err,
 	}
-}
-
-func (g *Generator) updateAndGetIsDone() bool {
-	if g.isDoneFlag {
-		return true
-	}
-
-	isDone := <-g.doneChan
-	if isDone {
-		g.isDoneFlag = true
-	}
-
-	return isDone
 }

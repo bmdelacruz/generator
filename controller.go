@@ -27,10 +27,14 @@ func (c *Controller) Yield(value interface{}) (interface{}, bool, error) {
 		case <-c.g.returnChan:
 		}
 
-		c.g.updateAndGetIsDone()
+		<-c.g.doneChan
 
 		return nil, false, err
 	default:
+	}
+
+	if c.g.isDoneFlag {
+		return nil, true, nil
 	}
 
 	c.g.statusChan <- &status{
@@ -41,15 +45,13 @@ func (c *Controller) Yield(value interface{}) (interface{}, bool, error) {
 
 	select {
 	case value := <-c.g.yieldChan:
-		if c.g.updateAndGetIsDone() {
-			return nil, true, nil
-		}
+		<-c.g.doneChan
 		return value, false, nil
 	case err := <-c.g.errorChan:
-		c.g.updateAndGetIsDone()
+		<-c.g.doneChan
 		return nil, false, err
 	case value := <-c.g.returnChan:
-		c.g.updateAndGetIsDone()
+		<-c.g.doneChan
 		return value, true, nil
 	}
 }
@@ -75,10 +77,14 @@ func (c *Controller) Error(err error) (interface{}, bool, error) {
 		case <-c.g.returnChan:
 		}
 
-		c.g.updateAndGetIsDone()
+		<-c.g.doneChan
 
 		return nil, false, err
 	default:
+	}
+
+	if c.g.isDoneFlag {
+		return nil, true, nil
 	}
 
 	c.g.statusChan <- &status{
@@ -89,15 +95,13 @@ func (c *Controller) Error(err error) (interface{}, bool, error) {
 
 	select {
 	case value := <-c.g.yieldChan:
-		if c.g.updateAndGetIsDone() {
-			return nil, true, nil
-		}
+		<-c.g.doneChan
 		return value, false, nil
 	case err := <-c.g.errorChan:
-		c.g.updateAndGetIsDone()
+		<-c.g.doneChan
 		return nil, false, err
 	case value := <-c.g.returnChan:
-		c.g.updateAndGetIsDone()
+		<-c.g.doneChan
 		return value, true, nil
 	}
 }
