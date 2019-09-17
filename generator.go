@@ -34,37 +34,28 @@ func (g *Generator) Next(value interface{}) (interface{}, bool, error) {
 	if g.isDoneFlag {
 		return nil, true, nil
 	}
-
 	g.retStatusChan <- &yieldRetStatus{value}
 	g.doneChan <- false
-
-	status := <-g.statusChan
-	return status.value, status.done, status.err
+	return (<-g.statusChan).Data()
 }
 
 func (g *Generator) Return(value interface{}) (interface{}, bool, error) {
 	if g.isDoneFlag {
 		return nil, true, nil
 	}
-
 	g.retStatusChan <- &returnRetStatus{value}
 	g.isDoneFlag = true
 	g.doneChan <- true
-
-	status := <-g.statusChan
-	return status.value, status.done, status.err
+	return (<-g.statusChan).Data()
 }
 
 func (g *Generator) Error(err error) (interface{}, bool, error) {
 	if g.isDoneFlag {
 		return nil, true, nil
 	}
-
 	g.retStatusChan <- &errorRetStatus{err}
 	g.doneChan <- false
-
-	status := <-g.statusChan
-	return status.value, status.done, status.err
+	return (<-g.statusChan).Data()
 }
 
 func (g *Generator) start(generatorFunc GeneratorFunc) {

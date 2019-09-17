@@ -6,6 +6,10 @@ type status struct {
 	err   error
 }
 
+func (s status) Data() (interface{}, bool, error) {
+	return s.value, s.done, s.err
+}
+
 type retStatus interface {
 	Type() string
 	Data() (interface{}, bool, error)
