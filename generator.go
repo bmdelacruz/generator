@@ -1,8 +1,7 @@
 package generator
 
 type Generator struct {
-	isStarted bool
-	isDone    bool
+	isDone bool
 
 	isDoneChan    chan struct{}
 	statusChan    chan *status
@@ -14,8 +13,7 @@ type Func func(controller *Controller) (interface{}, error)
 
 func New(generatorFunc Func) *Generator {
 	generator := &Generator{
-		isStarted: false,
-		isDone:    false,
+		isDone: false,
 
 		isDoneChan:    make(chan struct{}),
 		statusChan:    make(chan *status),
