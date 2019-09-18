@@ -67,10 +67,8 @@ func (g *Generator) start(generatorFunc GeneratorFunc) {
 	case "yield":
 	case "error":
 		g.unhandledErrorChan <- e
-		close(g.unhandledErrorChan)
 	case "return":
 		g.unhandledReturnChan <- v
-		close(g.unhandledReturnChan)
 	}
 	<-g.doneChan
 
