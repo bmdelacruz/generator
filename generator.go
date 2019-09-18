@@ -4,11 +4,10 @@ type Generator struct {
 	isStarted bool
 	isDone    bool
 
-	isDoneChan          chan struct{}
-	statusChan          chan *status
-	retStatusChan       chan retStatus
-	unhandledReturnChan chan interface{}
-	unhandledErrorChan  chan error
+	isDoneChan    chan struct{}
+	statusChan    chan *status
+	retStatusChan chan retStatus
+	firstCallChan chan firstCall
 }
 
 type GeneratorFunc func(controller *Controller) (interface{}, error)
@@ -18,11 +17,10 @@ func New(generatorFunc GeneratorFunc) *Generator {
 		isStarted: false,
 		isDone:    false,
 
-		isDoneChan:          make(chan struct{}),
-		statusChan:          make(chan *status),
-		retStatusChan:       make(chan retStatus),
-		unhandledReturnChan: make(chan interface{}, 1),
-		unhandledErrorChan:  make(chan error, 1),
+		isDoneChan:    make(chan struct{}),
+		statusChan:    make(chan *status),
+		retStatusChan: make(chan retStatus),
+		firstCallChan: make(chan firstCall, 1),
 	}
 
 	go generator.start(generatorFunc)
@@ -66,23 +64,26 @@ func (g *Generator) start(generatorFunc GeneratorFunc) {
 	switch rs.Type() {
 	case "yield":
 	case "error":
-		g.unhandledErrorChan <- e
+		g.firstCallChan <- &errorFirstCall{e}
 	case "return":
-		g.unhandledReturnChan <- v
+		g.firstCallChan <- &returnFirstCall{v}
 	}
+	close(g.firstCallChan)
 	<-g.isDoneChan
 
 	value, err := generatorFunc(controller)
 
 	if !controller.wasUsed {
 		select {
-		case unhandledReturn := <-g.unhandledReturnChan:
-			value = unhandledReturn
-		default:
-		}
-		select {
-		case unhandledErr := <-g.unhandledErrorChan:
-			err = unhandledErr
+		case fc, ok := <-g.firstCallChan:
+			if ok {
+				switch fc.Type() {
+				case "error":
+					_, err = fc.Values()
+				case "return":
+					value, _ = fc.Values()
+				}
+			}
 		default:
 		}
 		g.isDone = true

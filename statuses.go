@@ -50,3 +50,32 @@ func (returnRetStatus) Type() string {
 func (rs returnRetStatus) Data() (interface{}, bool, error) {
 	return rs.value, true, nil
 }
+
+type firstCall interface {
+	Type() string
+	Values() (interface{}, error)
+}
+
+type returnFirstCall struct {
+	value interface{}
+}
+
+func (returnFirstCall) Type() string {
+	return "return"
+}
+
+func (fc returnFirstCall) Values() (interface{}, error) {
+	return fc.value, nil
+}
+
+type errorFirstCall struct {
+	err error
+}
+
+func (errorFirstCall) Type() string {
+	return "error"
+}
+
+func (fc errorFirstCall) Values() (interface{}, error) {
+	return nil, fc.err
+}

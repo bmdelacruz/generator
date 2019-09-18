@@ -12,17 +12,24 @@ func (c *Controller) Yield(value interface{}) (interface{}, bool, error) {
 	}
 
 	select {
-	case value := <-c.g.unhandledReturnChan:
-		return value, true, nil
-	case err := <-c.g.unhandledErrorChan:
-		c.g.statusChan <- &status{
-			value: nil,
-			done:  false,
-			err:   nil,
+	case fc, ok := <-c.g.firstCallChan:
+		if ok {
+			switch fc.Type() {
+			case "return":
+				value, _ := fc.Values()
+				return value, true, nil
+			case "error":
+				_, err := fc.Values()
+				c.g.statusChan <- &status{
+					value: nil,
+					done:  false,
+					err:   nil,
+				}
+				<-c.g.retStatusChan
+				<-c.g.isDoneChan
+				return nil, false, err
+			}
 		}
-		<-c.g.retStatusChan
-		<-c.g.isDoneChan
-		return nil, false, err
 	default:
 	}
 
@@ -46,17 +53,24 @@ func (c *Controller) Error(err error) (interface{}, bool, error) {
 	}
 
 	select {
-	case value := <-c.g.unhandledReturnChan:
-		return value, true, nil
-	case err := <-c.g.unhandledErrorChan:
-		c.g.statusChan <- &status{
-			value: nil,
-			done:  false,
-			err:   nil,
+	case fc, ok := <-c.g.firstCallChan:
+		if ok {
+			switch fc.Type() {
+			case "return":
+				value, _ := fc.Values()
+				return value, true, nil
+			case "error":
+				_, err := fc.Values()
+				c.g.statusChan <- &status{
+					value: nil,
+					done:  false,
+					err:   nil,
+				}
+				<-c.g.retStatusChan
+				<-c.g.isDoneChan
+				return nil, false, err
+			}
 		}
-		<-c.g.retStatusChan
-		<-c.g.isDoneChan
-		return nil, false, err
 	default:
 	}
 
