@@ -1,10 +1,10 @@
 package generator
 
 type Generator struct {
-	isStarted  bool
-	isDoneFlag bool
+	isStarted bool
+	isDone    bool
 
-	doneChan            chan bool
+	isDoneChan          chan struct{}
 	statusChan          chan *status
 	retStatusChan       chan retStatus
 	unhandledReturnChan chan interface{}
@@ -15,10 +15,10 @@ type GeneratorFunc func(controller *Controller) (interface{}, error)
 
 func New(generatorFunc GeneratorFunc) *Generator {
 	generator := &Generator{
-		isStarted:  false,
-		isDoneFlag: false,
+		isStarted: false,
+		isDone:    false,
 
-		doneChan:            make(chan bool),
+		isDoneChan:          make(chan struct{}),
 		statusChan:          make(chan *status),
 		retStatusChan:       make(chan retStatus),
 		unhandledReturnChan: make(chan interface{}, 1),
@@ -31,30 +31,30 @@ func New(generatorFunc GeneratorFunc) *Generator {
 }
 
 func (g *Generator) Next(value interface{}) (interface{}, bool, error) {
-	if g.isDoneFlag {
+	if g.isDone {
 		return nil, true, nil
 	}
 	g.retStatusChan <- &yieldRetStatus{value}
-	g.doneChan <- false
+	g.isDoneChan <- struct{}{}
 	return (<-g.statusChan).Data()
 }
 
 func (g *Generator) Return(value interface{}) (interface{}, bool, error) {
-	if g.isDoneFlag {
+	if g.isDone {
 		return nil, true, nil
 	}
 	g.retStatusChan <- &returnRetStatus{value}
-	g.isDoneFlag = true
-	g.doneChan <- true
+	g.isDone = true
+	g.isDoneChan <- struct{}{}
 	return (<-g.statusChan).Data()
 }
 
 func (g *Generator) Error(err error) (interface{}, bool, error) {
-	if g.isDoneFlag {
+	if g.isDone {
 		return nil, true, nil
 	}
 	g.retStatusChan <- &errorRetStatus{err}
-	g.doneChan <- false
+	g.isDoneChan <- struct{}{}
 	return (<-g.statusChan).Data()
 }
 
@@ -70,7 +70,7 @@ func (g *Generator) start(generatorFunc GeneratorFunc) {
 	case "return":
 		g.unhandledReturnChan <- v
 	}
-	<-g.doneChan
+	<-g.isDoneChan
 
 	value, err := generatorFunc(controller)
 
@@ -85,8 +85,7 @@ func (g *Generator) start(generatorFunc GeneratorFunc) {
 			err = unhandledErr
 		default:
 		}
-
-		g.isDoneFlag = true
+		g.isDone = true
 	}
 
 	g.statusChan <- &status{

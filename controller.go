@@ -21,12 +21,12 @@ func (c *Controller) Yield(value interface{}) (interface{}, bool, error) {
 			err:   nil,
 		}
 		<-c.g.retStatusChan
-		<-c.g.doneChan
+		<-c.g.isDoneChan
 		return nil, false, err
 	default:
 	}
 
-	if c.g.isDoneFlag {
+	if c.g.isDone {
 		return nil, true, nil
 	}
 
@@ -36,7 +36,7 @@ func (c *Controller) Yield(value interface{}) (interface{}, bool, error) {
 		err:   nil,
 	}
 	rs := <-c.g.retStatusChan
-	<-c.g.doneChan
+	<-c.g.isDoneChan
 	return rs.Data()
 }
 
@@ -55,12 +55,12 @@ func (c *Controller) Error(err error) (interface{}, bool, error) {
 			err:   nil,
 		}
 		<-c.g.retStatusChan
-		<-c.g.doneChan
+		<-c.g.isDoneChan
 		return nil, false, err
 	default:
 	}
 
-	if c.g.isDoneFlag {
+	if c.g.isDone {
 		return nil, true, nil
 	}
 
@@ -70,6 +70,6 @@ func (c *Controller) Error(err error) (interface{}, bool, error) {
 		err:   err,
 	}
 	rs := <-c.g.retStatusChan
-	<-c.g.doneChan
+	<-c.g.isDoneChan
 	return rs.Data()
 }
