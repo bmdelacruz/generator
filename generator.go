@@ -10,9 +10,9 @@ type Generator struct {
 	firstCallChan chan firstCall
 }
 
-type GeneratorFunc func(controller *Controller) (interface{}, error)
+type Func func(controller *Controller) (interface{}, error)
 
-func New(generatorFunc GeneratorFunc) *Generator {
+func New(generatorFunc Func) *Generator {
 	generator := &Generator{
 		isStarted: false,
 		isDone:    false,
@@ -56,7 +56,7 @@ func (g *Generator) Error(err error) (interface{}, bool, error) {
 	return (<-g.statusChan).Data()
 }
 
-func (g *Generator) start(generatorFunc GeneratorFunc) {
+func (g *Generator) start(generatorFunc Func) {
 	controller := &Controller{g: g}
 
 	rs := <-g.retStatusChan
