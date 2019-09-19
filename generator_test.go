@@ -7,491 +7,198 @@ import (
 	"github.com/bmdelacruz/generator"
 )
 
-func TestGenerator_Call_next_without_values_on_empty_generator_function(t *testing.T) {
-	t.Parallel()
-	g := generator.New(
-		func(gc *generator.Controller) (interface{}, error) {
-			return nil, nil
-		},
-	)
-	v, r, e := g.Next(nil)
-	if v != nil || !r || e != nil {
-		t.Fatal(v, r, e)
-	}
-	v, r, e = g.Next(nil)
-	if v != nil || !r || e != nil {
-		t.Fatal(v, r, e)
-	}
+func TestGenerator_Next(t *testing.T) {
+	t.Run(`Next("a"),Next("b"),Next("c")|..`, func(t *testing.T) {
+		g := generator.New(
+			func(gc *generator.Controller) (interface{}, error) {
+				return 0, nil
+			},
+		)
+		testWith(t).expect(g.Next("a")).toReturn(0, true, nil)
+		testWith(t).expect(g.Next("b")).toReturn(nil, true, nil)
+		testWith(t).expect(g.Next("c")).toReturn(nil, true, nil)
+	})
+	t.Run(`Next("a"),Next("b"),Next("c")|Yield(1)`, func(t *testing.T) {
+		g := generator.New(
+			func(gc *generator.Controller) (interface{}, error) {
+				testWith(t).pexpect(gc.Yield(1)).toReturn("b", false, nil)
+				return 0, nil
+			},
+		)
+		testWith(t).expect(g.Next("a")).toReturn(1, false, nil)
+		testWith(t).expect(g.Next("b")).toReturn(0, true, nil)
+		testWith(t).expect(g.Next("c")).toReturn(nil, true, nil)
+	})
+	t.Run(`Next("a"),Next("b"),Next("c")|Error(<e1>)`, func(t *testing.T) {
+		e1 := fmt.Errorf("e1")
+		g := generator.New(
+			func(gc *generator.Controller) (interface{}, error) {
+				testWith(t).pexpect(gc.Error(e1)).toReturn("b", false, nil)
+				return 0, nil
+			},
+		)
+		testWith(t).expect(g.Next("a")).toReturn(nil, false, e1)
+		testWith(t).expect(g.Next("b")).toReturn(0, true, nil)
+		testWith(t).expect(g.Next("c")).toReturn(nil, true, nil)
+	})
 }
 
-func TestGenerator_Call_next_with_values_on_empty_generator_function(t *testing.T) {
-	t.Parallel()
-	g := generator.New(
-		func(gc *generator.Controller) (interface{}, error) {
-			return nil, nil
-		},
-	)
-	v, r, e := g.Next("a")
-	if v != nil || !r || e != nil {
-		t.Fatal(v, r, e)
-	}
-	v, r, e = g.Next("b")
-	if v != nil || !r || e != nil {
-		t.Fatal(v, r, e)
-	}
+func TestGenerator_Return(t *testing.T) {
+	t.Run(`Return("a"),Return("b"),Next("c")|..`, func(t *testing.T) {
+		g := generator.New(
+			func(gc *generator.Controller) (interface{}, error) {
+				return 0, nil
+			},
+		)
+		testWith(t).expect(g.Return("a")).toReturn("a", true, nil)
+		testWith(t).expect(g.Return("b")).toReturn(nil, true, nil)
+		testWith(t).expect(g.Next("c")).toReturn(nil, true, nil)
+	})
+	t.Run(`Return("a"),Return("b"),Next("c")|Yield(1)`, func(t *testing.T) {
+		g := generator.New(
+			func(gc *generator.Controller) (interface{}, error) {
+				testWith(t).pexpect(gc.Yield(1)).toReturn("a", true, nil)
+				return 0, nil
+			},
+		)
+		testWith(t).expect(g.Return("a")).toReturn(0, true, nil)
+		testWith(t).expect(g.Return("b")).toReturn(nil, true, nil)
+		testWith(t).expect(g.Next("c")).toReturn(nil, true, nil)
+	})
+	t.Run(`Return("a"),Return("b"),Next("c")|Error(<e1>)`, func(t *testing.T) {
+		e1 := fmt.Errorf("e1")
+		g := generator.New(
+			func(gc *generator.Controller) (interface{}, error) {
+				testWith(t).pexpect(gc.Error(e1)).toReturn("a", true, nil)
+				return 0, nil
+			},
+		)
+		testWith(t).expect(g.Return("a")).toReturn(0, true, nil)
+		testWith(t).expect(g.Return("b")).toReturn(nil, true, nil)
+		testWith(t).expect(g.Next("c")).toReturn(nil, true, nil)
+	})
 }
 
-func TestGenerator_Call_return_without_values_on_empty_generator_function(t *testing.T) {
-	t.Parallel()
-	g := generator.New(
-		func(gc *generator.Controller) (interface{}, error) {
-			return nil, nil
-		},
-	)
-	v, r, e := g.Return(nil)
-	if v != nil || !r || e != nil {
-		t.Fatal(v, r, e)
-	}
-	v, r, e = g.Return(nil)
-	if v != nil || !r || e != nil {
-		t.Fatal(v, r, e)
-	}
+func TestGenerator_Error(t *testing.T) {
+	t.Run(`Error("a"),Error("b"),Next("c")|..`, func(t *testing.T) {
+		e1 := fmt.Errorf("e1")
+		e2 := fmt.Errorf("e2")
+		g := generator.New(
+			func(gc *generator.Controller) (interface{}, error) {
+				return 0, nil
+			},
+		)
+		testWith(t).expect(g.Error(e1)).toReturn(0, true, e1)
+		testWith(t).expect(g.Error(e2)).toReturn(nil, true, nil)
+		testWith(t).expect(g.Next("c")).toReturn(nil, true, nil)
+	})
+	t.Run(`Error("a"),Error("b"),Next("c")|Yield(1)`, func(t *testing.T) {
+		e1 := fmt.Errorf("e1")
+		e2 := fmt.Errorf("e2")
+		g := generator.New(
+			func(gc *generator.Controller) (interface{}, error) {
+				testWith(t).pexpect(gc.Yield(1)).toReturn(nil, false, e1)
+				return 0, nil
+			},
+		)
+		testWith(t).expect(g.Error(e1)).toReturn(nil, false, nil)
+		testWith(t).expect(g.Error(e2)).toReturn(0, true, nil)
+		testWith(t).expect(g.Next("c")).toReturn(nil, true, nil)
+	})
+	t.Run(`Error("a"),Error("b"),Next("c")|Error(<e1>)`, func(t *testing.T) {
+		e1 := fmt.Errorf("e1")
+		e2 := fmt.Errorf("e2")
+		e3 := fmt.Errorf("e3")
+		g := generator.New(
+			func(gc *generator.Controller) (interface{}, error) {
+				testWith(t).pexpect(gc.Error(e3)).toReturn(nil, false, e1)
+				return 0, nil
+			},
+		)
+		testWith(t).expect(g.Error(e1)).toReturn(nil, false, nil)
+		testWith(t).expect(g.Error(e2)).toReturn(0, true, nil)
+		testWith(t).expect(g.Next("c")).toReturn(nil, true, nil)
+	})
 }
 
-func TestGenerator_Call_return_with_values_on_empty_generator_function(t *testing.T) {
-	t.Parallel()
-	g := generator.New(
-		func(gc *generator.Controller) (interface{}, error) {
-			return nil, nil
-		},
-	)
-	v, r, e := g.Return("a")
-	if v != "a" || !r || e != nil {
-		t.Fatal(v, r, e)
-	}
-	v, r, e = g.Return("b")
-	if v != nil || !r || e != nil {
-		t.Fatal(v, r, e)
-	}
+func TestController_Yield(t *testing.T) {
+	t.Run(`Next("a"),Next("b"),Return("c")|Yield(1),Yield(2),Yield(3)`, func(t *testing.T) {
+		g := generator.New(
+			func(gc *generator.Controller) (interface{}, error) {
+				testWith(t).pexpect(gc.Yield(1)).toReturn("b", false, nil)
+				testWith(t).pexpect(gc.Yield(2)).toReturn("c", true, nil)
+				testWith(t).pexpect(gc.Yield(3)).toReturn(nil, true, nil)
+				return 0, nil
+			},
+		)
+		testWith(t).expect(g.Next("a")).toReturn(1, false, nil)
+		testWith(t).expect(g.Next("b")).toReturn(2, false, nil)
+		testWith(t).expect(g.Return("c")).toReturn(0, true, nil)
+		testWith(t).expect(g.Next("d")).toReturn(nil, true, nil)
+	})
 }
 
-func TestGenerator_Call_error_with_values_on_empty_generator_function(t *testing.T) {
-	t.Parallel()
-	g := generator.New(
-		func(gc *generator.Controller) (interface{}, error) {
-			return nil, nil
-		},
-	)
-
-	e1 := fmt.Errorf("e1")
-	v, r, e := g.Error(e1)
-	if v != nil || !r || e != e1 {
-		t.Fatal(v, r, e)
-	}
-
-	e2 := fmt.Errorf("e2")
-	v, r, e = g.Error(e2)
-	if v != nil || !r || e != nil {
-		t.Fatal(v, r, e)
-	}
+func TestController_Error(t *testing.T) {
+	t.Run(`Next("a"),Next("b"),Return("c")|Yield(1),Yield(2),Yield(3)`, func(t *testing.T) {
+		e1 := fmt.Errorf("e1")
+		g := generator.New(
+			func(gc *generator.Controller) (interface{}, error) {
+				testWith(t).pexpect(gc.Yield(1)).toReturn("b", false, nil)
+				testWith(t).pexpect(gc.Error(e1)).toReturn("c", true, nil)
+				testWith(t).pexpect(gc.Yield(3)).toReturn(nil, true, nil)
+				return 0, nil
+			},
+		)
+		testWith(t).expect(g.Next("a")).toReturn(1, false, nil)
+		testWith(t).expect(g.Next("b")).toReturn(nil, false, e1)
+		testWith(t).expect(g.Return("c")).toReturn(0, true, nil)
+		testWith(t).expect(g.Next("d")).toReturn(nil, true, nil)
+	})
 }
 
-func TestGenerator_Call_error_with_values_on_error_returning_empty_generator_function(t *testing.T) {
-	t.Parallel()
-	g := generator.New(
-		func(gc *generator.Controller) (interface{}, error) {
-			return nil, fmt.Errorf("some generator error")
-		},
-	)
+// utility stuff =====================================================
 
-	e1 := fmt.Errorf("some error!")
-	v, r, e := g.Error(e1)
-	if v != nil || !r || e == nil {
-		t.Fatal(v, r, e)
-	}
+type tw struct {
+	t *testing.T
 }
 
-func TestGenerator_Call_next_without_values_on_yielding_generator_function(t *testing.T) {
-	t.Parallel()
-	g := generator.New(
-		func(gc *generator.Controller) (interface{}, error) {
-			v, r, e := gc.Yield(1)
-			if v != nil || r || e != nil {
-				t.Fatal(v, r, e)
-			}
-			v, r, e = gc.Yield(2)
-			if v != nil || r || e != nil {
-				t.Fatal(v, r, e)
-			}
-			return nil, nil
-		},
-	)
-	v, r, e := g.Next(nil)
-	if v != 1 || r || e != nil {
-		t.Fatal(v, r, e)
-	}
-	v, r, e = g.Next(nil)
-	if v != 2 || r || e != nil {
-		t.Fatal(v, r, e)
-	}
-	v, r, e = g.Next(nil)
-	if v != nil || !r || e != nil {
-		t.Fatal(v, r, e)
-	}
+type twe struct {
+	tw *tw
+	v  interface{}
+	r  bool
+	e  error
+	p  bool
 }
 
-func TestGenerator_Call_next_with_values_on_yielding_generator_function(t *testing.T) {
-	t.Parallel()
-	g := generator.New(
-		func(gc *generator.Controller) (interface{}, error) {
-			v, r, e := gc.Yield(1)
-			if v != "a" || r || e != nil {
-				t.Fatal(v, r, e)
-			}
-			v, r, e = gc.Yield(2)
-			if v != "b" || r || e != nil {
-				t.Fatal(v, r, e)
-			}
-			return nil, nil
-		},
-	)
-	v, r, e := g.Next(nil)
-	if v != 1 || r || e != nil {
-		t.Fatal(v, r, e)
-	}
-	v, r, e = g.Next("a")
-	if v != 2 || r || e != nil {
-		t.Fatal(v, r, e)
-	}
-	v, r, e = g.Next("b")
-	if v != nil || !r || e != nil {
-		t.Fatal(v, r, e)
-	}
+func testWith(t *testing.T) *tw {
+	return &tw{t}
 }
 
-func TestGenerator_Call_return_without_values_on_yielding_generator_function(t *testing.T) {
-	t.Parallel()
-	g := generator.New(
-		func(gc *generator.Controller) (interface{}, error) {
-			v, r, e := gc.Yield(1)
-			if v != nil || !r || e != nil {
-				t.Fatal(v, r, e)
-			}
-			return v, nil
-		},
-	)
-	v, r, e := g.Return(nil)
-	if v != nil || !r || e != nil {
-		t.Fatal(v, r, e)
-	}
-	v, r, e = g.Return(nil)
-	if v != nil || !r || e != nil {
-		t.Fatal(v, r, e)
-	}
+func (tw *tw) expect(v interface{}, r bool, e error) *twe {
+	p := false
+	return &twe{tw, v, r, e, p}
 }
 
-func TestGenerator_Call_return_with_values_on_yielding_generator_function(t *testing.T) {
-	t.Parallel()
-	g := generator.New(
-		func(gc *generator.Controller) (interface{}, error) {
-			v, r, e := gc.Yield(1)
-			if v != "a" || !r || e != nil {
-				t.Fatal(v, r, e)
-			}
-			return v, nil
-		},
-	)
-	v, r, e := g.Return("a")
-	if v != "a" || !r || e != nil {
-		t.Fatal(v, r, e)
-	}
+func (tw *tw) pexpect(v interface{}, r bool, e error) *twe {
+	p := true
+	return &twe{tw, v, r, e, p}
 }
 
-func TestGenerator_Call_error_with_values_on_yielding_generator_function(t *testing.T) {
-	t.Parallel()
-	e1 := fmt.Errorf("e1")
-	g := generator.New(
-		func(gc *generator.Controller) (interface{}, error) {
-			v, r, e := gc.Yield(1)
-			if v != nil || r || e != e1 {
-				t.Fatal(v, r, e)
-			}
-			return nil, e
-		},
-	)
-	v, r, e := g.Error(e1)
-	if v != nil || r || e != nil {
-		t.Fatal(v, r, e)
+func (twe *twe) toReturn(v interface{}, r bool, e error) {
+	if v != twe.v || r != twe.r || e != twe.e {
+		if twe.p {
+			panic(
+				fmt.Errorf(
+					"got: %v, %v, %v. wanted: %v, %v, %v.",
+					twe.v, twe.r, twe.e, v, r, e,
+				),
+			)
+		} else {
+			twe.tw.t.Helper()
+			twe.tw.t.Fatalf(
+				"got: %v, %v, %v. wanted: %v, %v, %v.",
+				twe.v, twe.r, twe.e, v, r, e,
+			)
+		}
 	}
-	v, r, e = g.Next(e1)
-	if v != nil || !r || e != e1 {
-		t.Fatal(v, r, e)
-	}
-}
-
-func TestGenerator_Call_next_next_and_return_with_values_on_yielding_generator_function(t *testing.T) {
-	t.Parallel()
-	g := generator.New(
-		func(gc *generator.Controller) (interface{}, error) {
-			v, r, e := gc.Yield(1)
-			if v != "a" || r || e != nil {
-				panic(fmt.Errorf("%v %v %v", v, r, e))
-			}
-			v, r, e = gc.Yield(2)
-			if v != "b" || !r || e != nil {
-				panic(fmt.Errorf("%v %v %v", v, r, e))
-			}
-			return v, nil
-		},
-	)
-	v, r, e := g.Next(nil)
-	if v != 1 || r || e != nil {
-		t.Fatal(v, r, e)
-	}
-	v, r, e = g.Next("a")
-	if v != 2 || r || e != nil {
-		t.Fatal(v, r, e)
-	}
-	v, r, e = g.Return("b")
-	if v != "b" || !r || e != nil {
-		t.Fatal(v, r, e)
-	}
-}
-
-func TestGenerator_Call_next_next_and_error_with_values_on_yielding_generator_function(t *testing.T) {
-	t.Parallel()
-	g := generator.New(
-		func(gc *generator.Controller) (interface{}, error) {
-			v, r, e := gc.Yield(1)
-			if v != "a" || r || e != nil {
-				panic(fmt.Errorf("%v %v %v", v, r, e))
-			}
-			v, r, e = gc.Yield(2)
-			if v != nil || r || e == nil {
-				panic(fmt.Errorf("%v %v %v", v, r, e))
-			}
-			return nil, e
-		},
-	)
-	v, r, e := g.Next(nil)
-	if v != 1 || r || e != nil {
-		t.Fatal(v, r, e)
-	}
-	v, r, e = g.Next("a")
-	if v != 2 || r || e != nil {
-		t.Fatal(v, r, e)
-	}
-	e1 := fmt.Errorf("e1")
-	v, r, e = g.Error(e1)
-	if v != nil || !r || e != e1 {
-		t.Fatal(v, r, e)
-	}
-}
-
-func TestGenerator_Call_next_and_next_with_values_on_erroring_generator_function(t *testing.T) {
-	t.Parallel()
-	e1 := fmt.Errorf("e1")
-	g := generator.New(
-		func(gc *generator.Controller) (interface{}, error) {
-			v, r, e := gc.Error(e1)
-			if v != nil || r || e != nil {
-				panic(fmt.Errorf("%v %v %v", v, r, e))
-			}
-			return nil, nil
-		},
-	)
-	v, r, e := g.Next(nil)
-	if v != nil || r || e != e1 {
-		t.Fatal(v, r, e)
-	}
-	v, r, e = g.Next(nil)
-	if v != nil || !r || e != nil {
-		t.Fatal(v, r, e)
-	}
-}
-
-func TestGenerator_Call_return_without_values_on_erroring_generator_function(t *testing.T) {
-	t.Parallel()
-	e1 := fmt.Errorf("e1")
-	g := generator.New(
-		func(gc *generator.Controller) (interface{}, error) {
-			v, r, e := gc.Error(e1)
-			if v != nil || !r || e != nil {
-				panic(fmt.Errorf("%v %v %v", v, r, e))
-			}
-			return nil, nil
-		},
-	)
-	v, r, e := g.Return(nil)
-	if v != nil || !r || e != nil {
-		t.Fatal(v, r, e)
-	}
-}
-
-func TestGenerator_Call_error_and_next_without_values_on_erroring_generator_function(t *testing.T) {
-	t.Parallel()
-	e1 := fmt.Errorf("e1")
-	g := generator.New(
-		func(gc *generator.Controller) (interface{}, error) {
-			v, r, e := gc.Error(e1)
-			if v != nil || r || e != e1 {
-				panic(fmt.Errorf("%v %v %v", v, r, e))
-			}
-			return nil, e
-		},
-	)
-	v, r, e := g.Error(e1)
-	if v != nil || r || e != nil {
-		t.Fatal(v, r, e)
-	}
-	v, r, e = g.Next(nil)
-	if v != nil || !r || e != e1 {
-		t.Fatal(v, r, e)
-	}
-}
-
-func TestGenerator_Call_next_and_error_with_values_on_erroring_generator_function(t *testing.T) {
-	t.Parallel()
-	e1 := fmt.Errorf("e1")
-	g := generator.New(
-		func(gc *generator.Controller) (interface{}, error) {
-			v, r, e := gc.Error(e1)
-			if v != nil || r || e != e1 {
-				panic(fmt.Errorf("%v %v %v", v, r, e))
-			}
-			return nil, e
-		},
-	)
-	v, r, e := g.Next(nil)
-	if v != nil || r || e != e1 {
-		t.Fatal(v, r, e)
-	}
-	v, r, e = g.Error(e1)
-	if v != nil || !r || e != e1 {
-		t.Fatal(v, r, e)
-	}
-}
-
-func TestGenerator_Call_next_and_return_with_values_on_erroring_generator_function(t *testing.T) {
-	t.Parallel()
-	e1 := fmt.Errorf("e1")
-	g := generator.New(
-		func(gc *generator.Controller) (interface{}, error) {
-			v, r, e := gc.Error(e1)
-			if v != "a" || !r || e != nil {
-				panic(fmt.Errorf("%v %v %v", v, r, e))
-			}
-			return v, nil
-		},
-	)
-	v, r, e := g.Next(nil)
-	if v != nil || r || e != e1 {
-		t.Fatal(v, r, e)
-	}
-	v, r, e = g.Return("a")
-	if v != "a" || !r || e != nil {
-		t.Fatal(v, r, e)
-	}
-}
-
-func TestGenerator_Yield_multiple_times_in_generator_function_when_should_return_after_first_yield(t *testing.T) {
-	t.Parallel()
-	g := generator.New(
-		func(gc *generator.Controller) (interface{}, error) {
-			v, r, e := gc.Yield(1)
-			if v != nil || !r || e != nil {
-				panic(fmt.Errorf("%v %v %v", v, r, e))
-			}
-			v, r, e = gc.Yield(2)
-			if v != nil || !r || e != nil {
-				panic(fmt.Errorf("%v %v %v", v, r, e))
-			}
-			return nil, nil
-		},
-	)
-	v, r, e := g.Next(nil)
-	if v != 1 || r || e != nil {
-		t.Fatal(v, r, e)
-	}
-	v, r, e = g.Return(nil)
-	if v != nil || !r || e != nil {
-		t.Fatal(v, r, e)
-	}
-}
-
-func TestGenerator_Error_multiple_times_in_generator_function_when_should_return_after_first_error(t *testing.T) {
-	t.Parallel()
-	g := generator.New(
-		func(gc *generator.Controller) (interface{}, error) {
-			v, r, e := gc.Error(fmt.Errorf("e1"))
-			if v != nil || !r || e != nil {
-				panic(fmt.Errorf("%v %v %v", v, r, e))
-			}
-			v, r, e = gc.Error(fmt.Errorf("e2"))
-			if v != nil || !r || e != nil {
-				panic(fmt.Errorf("%v %v %v", v, r, e))
-			}
-			return nil, nil
-		},
-	)
-	v, r, e := g.Next(nil)
-	if v != nil || r || e == nil {
-		t.Fatal(v, r, e)
-	}
-	v, r, e = g.Return(nil)
-	if v != nil || !r || e != nil {
-		t.Fatal(v, r, e)
-	}
-}
-
-func ExampleGenerator_Return_without_value() {
-	g := generator.New(
-		func(gc *generator.Controller) (interface{}, error) {
-			return nil, nil
-		},
-	)
-
-	v, r, e := g.Next(nil)
-	fmt.Println("next", v, r, e)
-
-	// Output:
-	// next <nil> true <nil>
-}
-
-func ExampleGenerator_Return_with_value() {
-	g := generator.New(
-		func(gc *generator.Controller) (interface{}, error) {
-			return "yay!", nil
-		},
-	)
-
-	v, r, e := g.Next(nil)
-	fmt.Println("next", v, r, e)
-
-	// Output:
-	// next yay! true <nil>
-}
-
-func ExampleGenerator_Yield_and_then_return_without_value() {
-	g := generator.New(
-		func(gc *generator.Controller) (interface{}, error) {
-			gc.Yield(1)
-			gc.Yield(2)
-			return nil, nil
-		},
-	)
-
-	v, r, e := g.Next(nil)
-	fmt.Println("next", v, r, e)
-
-	v, r, e = g.Next(nil)
-	fmt.Println("next", v, r, e)
-
-	v, r, e = g.Next(nil)
-	fmt.Println("next", v, r, e)
-
-	// Output:
-	// next 1 false <nil>
-	// next 2 false <nil>
-	// next <nil> true <nil>
 }
