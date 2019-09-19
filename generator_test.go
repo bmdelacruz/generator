@@ -189,14 +189,14 @@ func (twe *twe) toReturn(v interface{}, r bool, e error) {
 		if twe.p {
 			panic(
 				fmt.Errorf(
-					"got: %v, %v, %v. wanted: %v, %v, %v.",
+					"got: %v, %v, %v. wanted: %v, %v, %v",
 					twe.v, twe.r, twe.e, v, r, e,
 				),
 			)
 		} else {
 			twe.tw.t.Helper()
 			twe.tw.t.Fatalf(
-				"got: %v, %v, %v. wanted: %v, %v, %v.",
+				"got: %v, %v, %v. wanted: %v, %v, %v",
 				twe.v, twe.r, twe.e, v, r, e,
 			)
 		}
